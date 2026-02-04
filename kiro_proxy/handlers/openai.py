@@ -14,7 +14,7 @@ from ..core.state import RequestLog
 from ..core.history_manager import HistoryManager, get_history_config, is_content_length_error
 from ..core.error_handler import classify_error, ErrorType, format_error_log
 from ..core.rate_limiter import get_rate_limiter
-from ..kiro_api import build_headers, build_kiro_request, parse_event_stream, is_quota_exceeded_error
+from ..kiro_api import build_headers, build_kiro_request, parse_event_stream, parse_event_stream_full, is_quota_exceeded_error
 from ..converters import generate_session_id, convert_openai_messages_to_kiro, extract_images_from_content
 
 
@@ -24,6 +24,7 @@ async def handle_chat_completions(request: Request):
     log_id = uuid.uuid4().hex[:8]
     
     body = await request.json()
+    
     model = map_model_name(body.get("model", "claude-sonnet-4"))
     messages = body.get("messages", [])
     stream = body.get("stream", False)
@@ -206,7 +207,12 @@ async def handle_chat_completions(request: Request):
                     
                     raise HTTPException(resp.status_code, error.user_message)
                 
-                content = parse_event_stream(resp.content)
+                # 使用 parse_event_stream_full 获取完整响应（包括 tool_uses）
+                result = parse_event_stream_full(resp.content)
+                content = "".join(result.get("content", []))
+                tool_uses = result.get("tool_uses", [])
+                stop_reason = result.get("stop_reason", "stop")
+                
                 current_account.request_count += 1
                 current_account.last_used = time.time()
                 get_rate_limiter().record_request(current_account.id)
@@ -264,28 +270,81 @@ async def handle_chat_completions(request: Request):
     
     if stream:
         async def generate():
-            for chunk in [content[i:i+20] for i in range(0, len(content), 20)]:
-                data = {
-                    "id": f"chatcmpl-{log_id}",
-                    "object": "chat.completion.chunk",
-                    "created": int(time.time()),
-                    "model": model,
-                    "choices": [{"index": 0, "delta": {"content": chunk}, "finish_reason": None}]
-                }
-                yield f"data: {json.dumps(data)}\n\n"
-                await asyncio.sleep(0.02)
+            # 首先发送 role
+            yield f'data: {json.dumps({"id": f"chatcmpl-{log_id}", "object": "chat.completion.chunk", "created": int(time.time()), "model": model, "choices": [{"index": 0, "delta": {"role": "assistant"}, "finish_reason": None}]})}\n\n'
             
+            # 如果有内容，分块发送
+            if content:
+                for chunk in [content[i:i+20] for i in range(0, len(content), 20)]:
+                    data = {
+                        "id": f"chatcmpl-{log_id}",
+                        "object": "chat.completion.chunk",
+                        "created": int(time.time()),
+                        "model": model,
+                        "choices": [{"index": 0, "delta": {"content": chunk}, "finish_reason": None}]
+                    }
+                    yield f"data: {json.dumps(data)}\n\n"
+                    await asyncio.sleep(0.02)
+            
+            # 如果有 tool_calls，发送 tool_calls
+            if tool_uses:
+                for i, tool_use in enumerate(tool_uses):
+                    # 发送 tool_call 开始
+                    tool_call_delta = {
+                        "id": f"chatcmpl-{log_id}",
+                        "object": "chat.completion.chunk",
+                        "created": int(time.time()),
+                        "model": model,
+                        "choices": [{
+                            "index": 0,
+                            "delta": {
+                                "tool_calls": [{
+                                    "index": i,
+                                    "id": tool_use.get("id", f"call_{uuid.uuid4().hex[:24]}"),
+                                    "type": "function",
+                                    "function": {
+                                        "name": tool_use.get("name", ""),
+                                        "arguments": json.dumps(tool_use.get("input", {}))
+                                    }
+                                }]
+                            },
+                            "finish_reason": None
+                        }]
+                    }
+                    yield f"data: {json.dumps(tool_call_delta)}\n\n"
+            
+            # 发送结束标记
+            final_finish_reason = "tool_calls" if tool_uses else stop_reason
             end_data = {
                 "id": f"chatcmpl-{log_id}",
                 "object": "chat.completion.chunk",
                 "created": int(time.time()),
                 "model": model,
-                "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]
+                "choices": [{"index": 0, "delta": {}, "finish_reason": final_finish_reason}]
             }
             yield f"data: {json.dumps(end_data)}\n\n"
             yield "data: [DONE]\n\n"
         
         return StreamingResponse(generate(), media_type="text/event-stream")
+    
+    # 构建响应消息
+    message = {"role": "assistant", "content": content}
+    
+    # 如果有 tool_uses，转换为 OpenAI 格式的 tool_calls
+    if tool_uses:
+        message["tool_calls"] = []
+        for tool_use in tool_uses:
+            message["tool_calls"].append({
+                "id": tool_use.get("id", f"call_{uuid.uuid4().hex[:24]}"),
+                "type": "function",
+                "function": {
+                    "name": tool_use.get("name", ""),
+                    "arguments": json.dumps(tool_use.get("input", {}))
+                }
+            })
+    
+    # 根据是否有 tool_calls 设置 finish_reason
+    finish_reason = "tool_calls" if tool_uses else stop_reason
     
     return {
         "id": f"chatcmpl-{log_id}",
@@ -294,8 +353,8 @@ async def handle_chat_completions(request: Request):
         "model": model,
         "choices": [{
             "index": 0,
-            "message": {"role": "assistant", "content": content},
-            "finish_reason": "stop"
+            "message": message,
+            "finish_reason": finish_reason
         }],
         "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
     }

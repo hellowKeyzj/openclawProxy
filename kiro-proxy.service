@@ -1,0 +1,21 @@
+[Unit]
+Description=Kiro API Proxy Server
+After=network.target
+
+[Service]
+Type=simple
+User=keyzj
+WorkingDirectory=/home/keyzj/KiroProxy
+Environment="PATH=/home/keyzj/KiroProxy/.venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/home/keyzj/KiroProxy/.venv/bin/python /home/keyzj/KiroProxy/run.py 8081
+Restart=always
+RestartSec=10
+StandardOutput=append:/home/keyzj/KiroProxy/logs/proxy.log
+StandardError=append:/home/keyzj/KiroProxy/logs/proxy-error.log
+
+# 性能优化
+Nice=-5
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
