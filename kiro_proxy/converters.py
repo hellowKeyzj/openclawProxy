@@ -403,13 +403,21 @@ def convert_kiro_response_to_anthropic(result: dict, model: str, msg_id: str) ->
     for tool_use in result["tool_uses"]:
         content.append(tool_use)
     
+    # 映射 stop_reason: Kiro 的 "stop" -> Anthropic 的 "end_turn"
+    stop_reason = result.get("stop_reason", "stop")
+    if stop_reason == "stop":
+        stop_reason = "end_turn"
+    elif stop_reason == "max_tokens":
+        stop_reason = "max_tokens"
+    # "tool_use" 保持不变
+    
     return {
         "id": msg_id,
         "type": "message",
         "role": "assistant",
         "content": content,
         "model": model,
-        "stop_reason": result["stop_reason"],
+        "stop_reason": stop_reason,
         "stop_sequence": None,
         "usage": {"input_tokens": 100, "output_tokens": 100}
     }
@@ -664,11 +672,13 @@ def convert_kiro_response_to_openai(result: dict, model: str, msg_id: str) -> di
                 }
             })
     
-    # 映射 stop_reason
+    # 映射 stop_reason 到 OpenAI 标准格式
     stop_reason = result.get("stop_reason", "stop")
     finish_reason = "tool_calls" if tool_calls else "stop"
     if stop_reason == "max_tokens":
         finish_reason = "length"
+    elif stop_reason in ["end_turn", "stop_sequence"]:
+        finish_reason = "stop"
     
     message = {
         "role": "assistant",

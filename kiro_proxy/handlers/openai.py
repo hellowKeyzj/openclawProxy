@@ -313,8 +313,16 @@ async def handle_chat_completions(request: Request):
                     }
                     yield f"data: {json.dumps(tool_call_delta)}\n\n"
             
-            # 发送结束标记
-            final_finish_reason = "tool_calls" if tool_uses else stop_reason
+            # 发送结束标记，映射 stop_reason 到 OpenAI 标准格式
+            if tool_uses:
+                final_finish_reason = "tool_calls"
+            elif stop_reason == "max_tokens":
+                final_finish_reason = "length"
+            elif stop_reason in ["end_turn", "stop_sequence", "stop"]:
+                final_finish_reason = "stop"
+            else:
+                final_finish_reason = "stop"
+            
             end_data = {
                 "id": f"chatcmpl-{log_id}",
                 "object": "chat.completion.chunk",
@@ -343,8 +351,15 @@ async def handle_chat_completions(request: Request):
                 }
             })
     
-    # 根据是否有 tool_calls 设置 finish_reason
-    finish_reason = "tool_calls" if tool_uses else stop_reason
+    # 根据是否有 tool_calls 设置 finish_reason，并映射 stop_reason 到 OpenAI 标准格式
+    if tool_uses:
+        finish_reason = "tool_calls"
+    elif stop_reason == "max_tokens":
+        finish_reason = "length"
+    elif stop_reason in ["end_turn", "stop_sequence", "stop"]:
+        finish_reason = "stop"
+    else:
+        finish_reason = "stop"  # 默认值
     
     return {
         "id": f"chatcmpl-{log_id}",

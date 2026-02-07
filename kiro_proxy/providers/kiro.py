@@ -119,7 +119,7 @@ class KiroProvider(BaseProvider):
         result = {
             "content": [],
             "tool_uses": [],
-            "stop_reason": "end_turn"
+            "stop_reason": "stop"
         }
         
         tool_input_buffer = {}
