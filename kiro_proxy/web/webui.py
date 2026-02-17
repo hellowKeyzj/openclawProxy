@@ -118,7 +118,7 @@ CSS_STYLES = CSS_BASE + CSS_LAYOUT + CSS_COMPONENTS + CSS_FORMS + CSS_ACCOUNTS +
 # ==================== HTML 模板 ====================
 HTML_HEADER = '''
 <header>
-  <h1><img src="/assets/icon.svg" alt="Kiro">Kiro API Proxy</h1>
+  <h1>AI资料展示中心</h1>
   <div class="status">
     <span class="status-dot" id="statusDot"></span>
     <span id="statusText">检查中...</span>
@@ -128,13 +128,13 @@ HTML_HEADER = '''
 </header>
 
 <div class="tabs">
-  <div class="tab active" data-tab="help">帮助</div>
-  <div class="tab" data-tab="flows">流量</div>
-  <div class="tab" data-tab="monitor">监控</div>
-  <div class="tab" data-tab="accounts">账号</div>
-  <div class="tab" data-tab="logs">日志</div>
-  <div class="tab" data-tab="api">API</div>
-  <div class="tab" data-tab="settings">设置</div>
+  <div class="tab active" data-tab="help">AI资料</div>
+  <div class="tab" data-tab="flows">数据看板</div>
+  <div class="tab" data-tab="monitor">运行概览</div>
+  <div class="tab" data-tab="accounts">资源管理</div>
+  <div class="tab" data-tab="logs">访问记录</div>
+  <div class="tab" data-tab="api">开发接口</div>
+  <div class="tab" data-tab="settings">站点设置</div>
 </div>
 '''
 
@@ -619,11 +619,11 @@ async function checkStatus(){
     const statusMsg = d.ok ? (d.has_accounts ? _('status.connected') : _('status.noAccounts')) : _('status.disconnected');
     $('#statusText').textContent=statusMsg;
     if(d.port) {
-      $('#portInfo').textContent=_('status.port')+' '+d.port;
+      $('#portInfo').textContent='';
       if($('#currentPort'))$('#currentPort').textContent=d.port;
       if($('#newPort'))$('#newPort').value=d.port;
     }
-    if(d.stats)$('#uptime').textContent=_('status.running')+' '+formatUptime(d.stats.uptime_seconds);
+    if(d.stats)$('#uptime').textContent='';
   }catch(e){
     $('#statusDot').className='status-dot err';
     $('#statusText').textContent=_('status.failed');
@@ -640,7 +640,7 @@ function copyRestartCmd(){
 }
 
 // URLs
-$('#baseUrl').textContent=location.origin;
+if($('#baseUrl'))$('#baseUrl').textContent=location.origin;
 $$('.pyUrl').forEach(e=>e.textContent=location.origin);
 '''
 
@@ -1591,7 +1591,7 @@ function _(key) {{ return I18N[key] || key; }}
     # 替换 HTML 中的文本
     html_header = f'''
 <header>
-  <h1><img src="/assets/icon.svg" alt="Kiro">Kiro API Proxy</h1>
+  <h1>AI资料展示中心</h1>
   <div class="status">
     <span class="status-dot" id="statusDot"></span>
     <span id="statusText">{t('status.checking')}</span>
@@ -1601,13 +1601,13 @@ function _(key) {{ return I18N[key] || key; }}
 </header>
 
 <div class="tabs">
-  <div class="tab active" data-tab="help">{t('tab.help')}</div>
-  <div class="tab" data-tab="flows">{t('tab.flows')}</div>
-  <div class="tab" data-tab="monitor">{t('tab.monitor')}</div>
-  <div class="tab" data-tab="accounts">{t('tab.accounts')}</div>
-  <div class="tab" data-tab="logs">{t('tab.logs')}</div>
-  <div class="tab" data-tab="api">API</div>
-  <div class="tab" data-tab="settings">{t('tab.settings')}</div>
+  <div class="tab active" data-tab="help">AI资料</div>
+  <div class="tab" data-tab="flows">数据看板</div>
+  <div class="tab" data-tab="monitor">运行概览</div>
+  <div class="tab" data-tab="accounts">资源管理</div>
+  <div class="tab" data-tab="logs">访问记录</div>
+  <div class="tab" data-tab="api">开发接口</div>
+  <div class="tab" data-tab="settings">站点设置</div>
 </div>
 '''
 
@@ -1763,7 +1763,7 @@ function _(key) {{ return I18N[key] || key; }}
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kiro API</title>
+<title>AI资料展示中心</title>
 <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
 <style>
 {CSS_STYLES}
@@ -1772,7 +1772,7 @@ function _(key) {{ return I18N[key] || key; }}
 <body>
 <div class="container">
 {html_body}
-<div class="footer">Kiro API Proxy v1.7.16</div>
+<div class="footer">AI资料展示页</div>
 </div>
 <script>
 {js_i18n}
@@ -1788,7 +1788,7 @@ HTML_PAGE = get_html_page() if False else f'''<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kiro API</title>
+<title>AI资料展示中心</title>
 <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
 <style>
 {CSS_STYLES}
@@ -1797,11 +1797,10 @@ HTML_PAGE = get_html_page() if False else f'''<!DOCTYPE html>
 <body>
 <div class="container">
 {HTML_BODY}
-<div class="footer">Kiro API Proxy v1.7.16</div>
+<div class="footer">AI资料展示页</div>
 </div>
 <script>
 {JS_SCRIPTS}
 </script>
 </body>
 </html>'''
-

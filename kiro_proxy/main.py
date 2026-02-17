@@ -488,18 +488,18 @@ async def api_update_rate_limit_config(request: Request):
 # 文档标题映射
 DOC_TITLES = {
     "zh": {
-        "01-quickstart": "快速开始",
-        "02-features": "功能特性",
-        "03-faq": "常见问题",
-        "04-api": "API 参考",
-        "05-server-deploy": "服务器部署",
+        "01-quickstart": "AI入门导览",
+        "02-features": "模型与能力图谱",
+        "03-faq": "AI常见问答",
+        "04-api": "工具与资源索引",
+        "05-server-deploy": "行业应用案例",
     },
     "en": {
-        "01-quickstart": "Quick Start",
-        "02-features": "Features",
-        "03-faq": "FAQ",
-        "04-api": "API Reference",
-        "05-server-deploy": "Server Deployment",
+        "01-quickstart": "AI Overview",
+        "02-features": "Model Capability Map",
+        "03-faq": "AI FAQ",
+        "04-api": "Tools & Resources",
+        "05-server-deploy": "Industry Use Cases",
     }
 }
 

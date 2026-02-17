@@ -1,137 +1,30 @@
-# API 参考
+# 工具与资源索引
 
-## 代理端点
+本页汇总 AI 学习与实践常用资源，便于快速查阅。
 
-### OpenAI 协议
+## 学习方向
 
-#### POST /v1/chat/completions
+1. 基础概念：Transformer、Token、上下文窗口
+2. 工程实践：Prompt、RAG、Agent、评测
+3. 部署运营：成本控制、监控、权限与安全
 
-Chat Completions API，兼容 OpenAI 格式。
+## 常见开发工具
 
-**请求示例：**
+| 类别 | 工具示例 | 用途 |
+|---|---|---|
+| 应用编排 | LangChain / LlamaIndex | 构建 AI 工作流与知识问答 |
+| 向量数据库 | Milvus / Weaviate / Chroma | 文档向量检索 |
+| 模型部署 | vLLM / Ollama / TGI | 本地或私有化推理服务 |
+| 评测框架 | Ragas / promptfoo | 结果质量评估 |
 
-```json
-{
-  "model": "gpt-4o",
-  "messages": [
-    {"role": "user", "content": "Hello!"}
-  ],
-  "stream": true
-}
-```
+## 资料来源建议
 
-**模型映射：**
+- 官方文档：优先阅读一手资料
+- 技术博客：关注工程实现和性能对比
+- 开源仓库：通过 Demo 快速验证方案可行性
 
-| 请求模型 | 实际使用 |
-|----------|----------|
-| gpt-4o, gpt-4 | claude-sonnet-4 |
-| gpt-4o-mini, gpt-3.5-turbo | claude-haiku-4.5 |
-| o1, o1-preview | claude-opus-4.5 |
+## 实践建议
 
-#### GET /v1/models
-
-获取可用模型列表。
-
----
-
-### Anthropic 协议
-
-#### POST /v1/messages
-
-Messages API，兼容 Anthropic 格式。
-
-**请求示例：**
-
-```json
-{
-  "model": "claude-sonnet-4",
-  "max_tokens": 4096,
-  "messages": [
-    {"role": "user", "content": "Hello!"}
-  ]
-}
-```
-
-#### POST /v1/messages/count_tokens
-
-计算消息的 Token 数量。
-
----
-
-### Gemini 协议
-
-#### POST /v1/models/{model}:generateContent
-
-Generate Content API，兼容 Gemini 格式。
-
----
-
-## 管理 API
-
-### 状态与统计
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/status` | GET | 服务状态 |
-| `/api/stats` | GET | 基础统计 |
-| `/api/stats/detailed` | GET | 详细统计 |
-| `/api/quota` | GET | 配额状态 |
-| `/api/logs` | GET | 请求日志 |
-
-### 账号管理
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/accounts` | GET | 账号列表 |
-| `/api/accounts` | POST | 添加账号 |
-| `/api/accounts/{id}` | GET | 账号详情 |
-| `/api/accounts/{id}` | DELETE | 删除账号 |
-| `/api/accounts/{id}/toggle` | POST | 启用/禁用 |
-| `/api/accounts/{id}/refresh` | POST | 刷新 Token |
-| `/api/accounts/{id}/restore` | POST | 恢复账号 |
-| `/api/accounts/{id}/usage` | GET | 用量查询 |
-| `/api/accounts/refresh-all` | POST | 刷新所有 |
-
-### Token 操作
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/token/scan` | GET | 扫描本地 Token |
-| `/api/token/add-from-scan` | POST | 从扫描添加 |
-| `/api/token/refresh-check` | POST | 检查 Token 状态 |
-
-### 登录
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/kiro/login/start` | POST | 启动 AWS 登录 |
-| `/api/kiro/login/poll` | GET | 轮询登录状态 |
-| `/api/kiro/login/cancel` | POST | 取消登录 |
-| `/api/kiro/social/start` | POST | 启动 Social 登录 |
-| `/api/kiro/social/exchange` | POST | 交换 Token |
-
-### Flow 监控
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/flows` | GET | 查询 Flows |
-| `/api/flows/stats` | GET | Flow 统计 |
-| `/api/flows/{id}` | GET | Flow 详情 |
-| `/api/flows/{id}/bookmark` | POST | 收藏 Flow |
-| `/api/flows/export` | POST | 导出 Flows |
-
----
-
-## 配置
-
-### 配置文件位置
-
-- 账号配置：`~/.kiro-proxy/config.json`
-- Token 缓存：`~/.aws/sso/cache/`
-
-### 配置导入导出
-
-| 端点 | 方法 | 说明 |
-|------|------|------|
-| `/api/config/export` | GET | 导出配置 |
-| `/api/config/import` | POST | 导入配置 |
+- 每个任务先定义评价指标
+- 先做最小可用版本（MVP）
+- 保留提示词、参数、输出日志，便于迭代优化
