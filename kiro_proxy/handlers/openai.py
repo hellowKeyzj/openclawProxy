@@ -15,7 +15,7 @@ from ..core.history_manager import HistoryManager, get_history_config, is_conten
 from ..core.error_handler import classify_error, ErrorType, format_error_log
 from ..core.rate_limiter import get_rate_limiter
 from ..kiro_api import build_headers, build_kiro_request, parse_event_stream, parse_event_stream_full, is_quota_exceeded_error
-from ..converters import generate_session_id, convert_openai_messages_to_kiro, extract_images_from_content
+from ..converters import generate_session_id, convert_openai_messages_to_kiro, extract_images_from_content, apply_user_prefix
 
 
 async def handle_chat_completions(request: Request):
@@ -68,9 +68,11 @@ async def handle_chat_completions(request: Request):
         await asyncio.sleep(wait_seconds)
     
     # 使用增强的转换函数
-    user_content, history, tool_results, kiro_tools = convert_openai_messages_to_kiro(
+    raw_user_content, history, tool_results, kiro_tools = convert_openai_messages_to_kiro(
         messages, model, tools, tool_choice
     )
+    # 前缀仅用于发送给 Kiro 的当前输入，不参与 history 预处理/截断判断
+    user_content = apply_user_prefix(raw_user_content)
     
     # 历史消息预处理
     history_manager = HistoryManager(get_history_config(), cache_key=session_id)
@@ -87,10 +89,10 @@ async def handle_chat_completions(request: Request):
         return ""
 
     # 检查是否需要智能摘要或错误重试预摘要
-    if history_manager.should_summarize(history) or history_manager.should_pre_summary_for_error_retry(history, user_content):
-        history = await history_manager.pre_process_async(history, user_content, call_summary)
+    if history_manager.should_summarize(history) or history_manager.should_pre_summary_for_error_retry(history, raw_user_content):
+        history = await history_manager.pre_process_async(history, raw_user_content, call_summary)
     else:
-        history = history_manager.pre_process(history, user_content)
+        history = history_manager.pre_process(history, raw_user_content)
     
     # 摘要/截断后再次修复历史交替和 toolUses/toolResults 配对
     from ..converters import fix_history_alternation
@@ -186,7 +188,7 @@ async def handle_chat_completions(request: Request):
                     # 检查是否为内容长度超限错误，尝试截断重试
                     if error.type == ErrorType.CONTENT_TOO_LONG:
                         history_chars, user_chars, total_chars = history_manager.estimate_request_chars(
-                            history, user_content
+                            history, raw_user_content
                         )
                         print(f"[OpenAI] 内容长度超限: history={history_chars} chars, user={user_chars} chars, total={total_chars} chars")
                         truncated_history, should_retry = await history_manager.handle_length_error_async(
